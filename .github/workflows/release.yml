@@ -8,7 +8,7 @@ permissions:
   contents: write
   issues: write
   pull-requests: write
-  id-token: write
+  id-token: write # npm OIDC trusted publishing
 
 concurrency:
   group: release-${{ github.ref }}
@@ -25,7 +25,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24 # ships npm >= 11.5.1, required for OIDC trusted publishing
           registry-url: https://registry.npmjs.org
 
       - name: Install dependencies
@@ -34,8 +34,26 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Verify dist tracked by npm files
-        run: npx npm-packlist || true
+      # npm OIDC trusted publishing: @semantic-release/npm 13.x exchanges this
+      # job's OIDC identity for a short-lived publish token — no NPM_TOKEN needed
+      # once the package exists on npm and its Trusted Publisher is configured:
+      #   npmjs.com -> paperclip-plugin-matrix-chat -> Settings -> Trusted Publisher
+      #     GitHub Actions / namhtpyn / paperclip-plugin-matrix-chat / release.yml / (env blank)
+      # NPM_TOKEN (classic Automation token) is only needed to bootstrap the
+      # package name; delete the secret after configuring the Trusted Publisher.
+      - name: Preflight npm auth
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          if ! curl -sfo /dev/null https://registry.npmjs.org/paperclip-plugin-matrix-chat; then
+            if [ -z "$NPM_TOKEN" ]; then
+              echo "::error::paperclip-plugin-matrix-chat does not exist on npm yet, and OIDC trusted publishing cannot create a new package. Either (a) bootstrap once from a logged-in npm session (npm publish --access public), then configure the Trusted Publisher on npmjs.com, or (b) temporarily set the NPM_TOKEN secret (classic Automation token) so this workflow can create it — then configure the Trusted Publisher and delete the secret."
+              exit 1
+            fi
+            echo "package not on npm yet; NPM_TOKEN present -> bootstrap publish via token"
+          else
+            echo "package exists on npm; OIDC trusted publishing will be used (no token required)"
+          fi
 
       - name: Release (semantic-release)
         env:

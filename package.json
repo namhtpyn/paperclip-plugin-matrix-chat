@@ -30,7 +30,7 @@
     "typescript": "^5.7.3"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22.14.0"
   },
   "dependencies": {
     "zod": "4.x"
@@ -47,7 +47,8 @@
     "README.md"
   ],
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   },
   "main": "./dist/worker.js"
 }
