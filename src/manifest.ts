@@ -61,7 +61,7 @@ const manifest: PaperclipPluginManifestV1 = {
           properties: {
             agentId: { type: "string", title: "Paperclip agent UUID" },
             accessToken: {
-              type: "string",
+              type: ["string", "object"],
               format: "secret-ref",
               title: "Matrix bot access token",
               description: "Pick a stored secret (recommended) — the token never lands in plugin config. Plain string also accepted for local dev.",
