@@ -65,6 +65,7 @@ function parseConfig(raw: unknown): Omit<BridgeConfig, "companyId"> | null {
         accessToken,
         listenRooms: Array.isArray(o.listenRooms) ? (o.listenRooms as string[]) : [],
         wakeOn: o.wakeOn === "all" ? "all" : o.wakeOn === "mention" ? "mention" : undefined,
+        enabled: o.enabled === false ? false : true,
       });
     }
   }
@@ -74,6 +75,7 @@ function parseConfig(raw: unknown): Omit<BridgeConfig, "companyId"> | null {
     endpoints: eps,
     wakeOn: cfg.wakeOn === "all" ? "all" : "mention",
     commandPrefix: "!", // locked; any stored value is overridden
+    bridgeEnabled: cfg.bridgeEnabled === false ? false : true,
   };
 }
 
