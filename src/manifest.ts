@@ -1,7 +1,7 @@
 import type { PaperclipPluginManifestV1 } from "@paperclipai/plugin-sdk";
 
 export const PLUGIN_ID = "paperclip.matrix-chat";
-export const PLUGIN_VERSION = "0.2.3";
+export const PLUGIN_VERSION = "0.2.5";
 
 const manifest: PaperclipPluginManifestV1 = {
   id: PLUGIN_ID,
@@ -50,6 +50,12 @@ const manifest: PaperclipPluginManifestV1 = {
         enum: ["!"],
         default: "!",
       },
+      bridgeEnabled: {
+        type: "boolean",
+        title: "Message bridge master switch",
+        description: "OFF: no messages are bridged to agents and no bot replies are sent (bot stays connected, all inbound is ignored). Commands (!status/!new) still work. Per-endpoint toggles below can disable individual bridges.",
+        default: true,
+      },
       endpoints: {
         type: "array",
         title: "Agent endpoints",
@@ -62,6 +68,12 @@ const manifest: PaperclipPluginManifestV1 = {
             accessToken: { type: "string", title: "Matrix bot access token" },
             listenRooms: { type: "array", items: { type: "string" }, title: "Room allowlist (IDs or aliases)" },
             wakeOn: { type: "string", enum: ["mention", "all"] },
+            enabled: {
+              type: "boolean",
+              title: "Bridge enabled",
+              description: "OFF: this bot stays connected to Matrix but ignores all messages (no wake, no replies, no commands). Master switch above must also be ON for any bridging.",
+              default: true,
+            },
           },
         },
       },

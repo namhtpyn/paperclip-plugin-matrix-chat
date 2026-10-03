@@ -27,6 +27,7 @@ interface EndpointConfig {
   accessToken: string;
   listenRooms: string[];
   wakeOn?: "mention" | "all";
+  enabled?: boolean;
 }
 
 interface BridgeConfig {
@@ -34,6 +35,7 @@ interface BridgeConfig {
   homeserverUrl: string;
   commandPrefix: string;
   wakeOn: "mention" | "all";
+  bridgeEnabled?: boolean;
   endpoints: EndpointConfig[];
 }
 
@@ -78,10 +80,11 @@ function parseConfig(raw: unknown): Omit<BridgeConfig, "companyId"> | null {
 async function startEndpointBridge(ctx: PluginContext, config: BridgeConfig, ep: EndpointConfig, agentName: string): Promise<{ stop: () => void; name: string }> {
   const logger = ctx.logger;
   const wakeOn = ep.wakeOn ?? config.wakeOn;
+  const epEnabled = ep.enabled !== false; // undefined/absent = enabled
 
   const matrix = new MatrixClient(config.homeserverUrl, ep.accessToken, (u, i) => ctx.http.fetch(u.toString(), i));
   const whoami = await matrix.whoami();
-  logger.info("Endpoint up", { agent: agentName, matrixUser: whoami.user_id });
+  logger.info("Endpoint up", { agent: agentName, matrixUser: whoami.user_id, bridging: config.bridgeEnabled !== false && epEnabled });
 
   const joined = new Set<string>();
   for (const room of ep.listenRooms) {
@@ -183,7 +186,11 @@ async function startEndpointBridge(ctx: PluginContext, config: BridgeConfig, ep:
     if (otherBotMention && !mentionsMe) return false; // targeted at a sibling bridge
 
     if (cmd === "status") {
-      await reply(roomId, `bridge v${manifest.version} [${me}]: agent ${agentName}, wake=${wakeOn}, rooms=${joined.size}`);
+      const sw = [];
+      if (config.bridgeEnabled === false) sw.push("MASTER OFF");
+      if (epEnabled === false) sw.push("endpoint OFF");
+      const suffix = sw.length ? ` ⏸ ${sw.join(" + ")}` : "";
+      await reply(roomId, `bridge v${manifest.version} [${me}]: agent ${agentName}, wake=${wakeOn}, rooms=${joined.size}${suffix}`);
       return true;
     }
     if (cmd === "new-session" || cmd === "new") {
@@ -218,6 +225,10 @@ async function startEndpointBridge(ctx: PluginContext, config: BridgeConfig, ep:
     const body = messageBody(ev);
     if (body === null) return;
     if (await handleCommand(roomId, body, ev)) return;
+
+    // Master + per-endpoint switches: OFF means ignore everything except commands.
+    if (config.bridgeEnabled === false) return;
+    if (epEnabled === false) return;
 
     const mentioned = mentionsUser(ev, whoami.user_id, body);
     if (wakeOn === "mention" && !mentioned) return;
