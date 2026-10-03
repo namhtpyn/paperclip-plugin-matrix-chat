@@ -252,16 +252,18 @@ async function startEndpointBridge(ctx: PluginContext, config: BridgeConfig, ep:
     // sendMessage returns { runId } immediately; done/error events stream in
     // asynchronously. Await them before replying — the agent run can
     // legitimately take many minutes (agent timeoutSec ceiling is 7200s).
-    // Soft deadline: after SOFT_TIMEOUT_MS post a "still working" notice but
-    // KEEP LISTENING until HARD_TIMEOUT_MS so a late success still lands.
-    const SOFT_TIMEOUT_MS = 15 * 60_000;
-    const HARD_TIMEOUT_MS = 110 * 60_000; // < 7200s agent ceiling, safe margin
+    // We impose NO timeout of our own: paperclip owns run timing and always
+    // emits a terminal event (done for succeeded, error for failed/cancelled/
+    // timed_out). The ONLY clock here is the host's own delivery window: it
+    // force-drops the event subscription after 30 min
+    // (SESSION_EVENT_SUBSCRIPTION_TIMEOUT_MS, hardcoded in the host), so past
+    // that point no terminal event can ever reach us — stop waiting then.
+    const HOST_DELIVERY_WINDOW_MS = 30 * 60_000;
     let settled = false;
-    let settleRun: (v: { text: string | null; error: string | null; late?: boolean }) => void = () => {};
-    const runDone = new Promise<{ text: string | null; error: string | null; late?: boolean }>((resolve) => {
+    let settleRun: (v: { text: string | null; error: string | null }) => void = () => {};
+    const runDone = new Promise<{ text: string | null; error: string | null }>((resolve) => {
       settleRun = (v) => { if (!settled) { settled = true; resolve(v); } };
-      setTimeout(() => { if (!settled) resolve({ text: null, error: "run timed out waiting for reply", late: true }); }, SOFT_TIMEOUT_MS);
-      setTimeout(() => settleRun({ text: null, error: `no reply within ${Math.round(HARD_TIMEOUT_MS / 60_000)} minutes` }), HARD_TIMEOUT_MS);
+      setTimeout(() => settleRun({ text: null, error: null }), HOST_DELIVERY_WINDOW_MS);
     });
     try {
       await ctx.agents.sessions.sendMessage(sessionId, config.companyId, {
@@ -278,20 +280,12 @@ async function startEndpointBridge(ctx: PluginContext, config: BridgeConfig, ep:
       return;
     }
     const outcome = await runDone;
-    if (outcome.late && !outcome.text) {
-      // soft deadline hit: tell the room we're still on it, then keep waiting
-      await reply(roomId, `⏳ still working — run is taking longer than ${Math.round(SOFT_TIMEOUT_MS / 60_000)} min; I'll follow up when it finishes`);
-      const final = await new Promise<{ text: string | null; error: string | null }>((resolve) => {
-        settleRun = (v) => resolve(v);
-        setTimeout(() => resolve({ text: null, error: null }), HARD_TIMEOUT_MS - SOFT_TIMEOUT_MS);
-      });
-      if (final.text) await reply(roomId, final.text);
-      else if (final.error) await reply(roomId, `⚠️ ${final.error}`.slice(0, 500));
-      // neither: hard timeout already announced its own window above
-      return;
-    }
     if (outcome.text) await reply(roomId, outcome.text);
-    else await reply(roomId, outcome.error ? `⚠️ ${outcome.error}`.slice(0, 500) : "(no reply)");
+    else if (outcome.error) await reply(roomId, `⚠️ ${outcome.error}`.slice(0, 500));
+    // else: host delivery window elapsed with no terminal event — the run may
+    // still be going (host allows up to 7200s). Say so honestly; the result,
+    // if any, lives on the board.
+    else await reply(roomId, "⏳ no reply within 30 min — the run may still be in progress; check it on the board");
   };
 
   const loop = async () => {
