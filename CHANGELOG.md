@@ -1,3 +1,10 @@
+## [0.4.2](https://github.com/namhtpyn/paperclip-plugin-matrix-chat/compare/v0.4.1...v0.4.2) (2026-10-03)
+
+
+### Bug Fixes
+
+* **ci:** build in semantic-release prepare so manifest version matches the release ([9e6a6fb](https://github.com/namhtpyn/paperclip-plugin-matrix-chat/commit/9e6a6fbb4bba35caa6f59f583a1bb6de5f5becee))
+
 ## [0.4.1](https://github.com/namhtpyn/paperclip-plugin-matrix-chat/compare/v0.4.0...v0.4.1) (2026-10-03)
 
 
