@@ -1,3 +1,10 @@
+# [0.4.0](https://github.com/namhtpyn/paperclip-plugin-matrix-chat/compare/v0.3.3...v0.4.0) (2026-10-03)
+
+
+### Features
+
+* statusReplies config toggle for the !status wake line ([b764808](https://github.com/namhtpyn/paperclip-plugin-matrix-chat/commit/b764808ea641e4102cc4595c6e7c9dc6d5027633))
+
 ## [0.3.3](https://github.com/namhtpyn/paperclip-plugin-matrix-chat/compare/v0.3.2...v0.3.3) (2026-10-03)
 
 
