@@ -18,7 +18,6 @@
     "semantic-release": "semantic-release"
   },
   "devDependencies": {
-    "@paperclipai/plugin-sdk": "file:./sdk-shim",
     "@semantic-release/changelog": "^7.0.0",
     "@semantic-release/commit-analyzer": "^13.0.1",
     "@semantic-release/git": "^11.0.1",
@@ -27,13 +26,14 @@
     "@semantic-release/release-notes-generator": "^14.1.1",
     "@types/node": "^22.20.5",
     "semantic-release": "^24.2.0",
-    "typescript": "^5.7.3"
+    "typescript": "^7.0.2"
   },
   "engines": {
     "node": ">=22.14.0"
   },
   "dependencies": {
-    "zod": "4.x"
+    "zod": "4.x",
+    "@paperclipai/plugin-sdk": "2026.1001.0"
   },
   "repository": {
     "type": "git",
@@ -42,7 +42,6 @@
   "license": "MIT",
   "files": [
     "dist",
-    "sdk-shim/dist",
     "LICENSE",
     "README.md"
   ],

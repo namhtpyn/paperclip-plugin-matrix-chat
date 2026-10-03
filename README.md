@@ -25,12 +25,12 @@ Runs a zero-dependency Matrix client (raw Client-Server API `/sync` long-poll) i
 ## Build
 
 ```bash
-npm install          # installs the vendored SDK shim (see note)
+npm install          # installs @paperclipai/plugin-sdk from npm
 npm run build        # tsc -> dist/
 npm run smoke        # optional: unit + live-homeserver smoke tests
 ```
 
-> **Vendored SDK**: `sdk-shim/` contains the official `@paperclipai/plugin-sdk` 1.0.0 dist (MIT, [source](https://github.com/paperclipai/paperclip/tree/main/packages/plugins/sdk)) so the plugin builds without registry access. The host provides the real SDK at runtime; the shim exists for type-checking and local builds only.
+> **SDK dependency**: `@paperclipai/plugin-sdk` is a regular npm dependency (versioned in lockstep with the Paperclip host, CalVer `YYYY.M.nnnn.x`). When the plugin is installed from the registry, npm resolves it alongside the plugin so the worker's ESM imports resolve without any host injection.
 
 ## Install
 
