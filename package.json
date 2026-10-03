@@ -50,5 +50,8 @@
     "access": "public",
     "registry": "https://registry.npmjs.org/"
   },
-  "main": "./dist/worker.js"
+  "main": "./dist/worker.js",
+  "overrides": {
+    "@semantic-release/npm": "$@semantic-release/npm"
+  }
 }
