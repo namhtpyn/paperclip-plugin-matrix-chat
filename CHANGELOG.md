@@ -1,3 +1,15 @@
+## [0.4.1](https://github.com/namhtpyn/paperclip-plugin-matrix-chat/compare/v0.4.0...v0.4.1) (2026-10-03)
+
+
+### Bug Fixes
+
+* publish the toggle removal (revert follow-up) ([b8eb80c](https://github.com/namhtpyn/paperclip-plugin-matrix-chat/commit/b8eb80cdfd6a60af9e88a535a62ea994754c2ffd))
+
+
+### Reverts
+
+* remove bridge on/off toggles ([de8b427](https://github.com/namhtpyn/paperclip-plugin-matrix-chat/commit/de8b4276b699979f33a5e279634d534694b36264))
+
 # [0.4.0](https://github.com/namhtpyn/paperclip-plugin-matrix-chat/compare/v0.3.3...v0.4.0) (2026-10-03)
 
 
