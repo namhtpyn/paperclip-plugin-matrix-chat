@@ -1,3 +1,10 @@
+## [0.3.3](https://github.com/namhtpyn/paperclip-plugin-matrix-chat/compare/v0.3.2...v0.3.3) (2026-10-03)
+
+
+### Bug Fixes
+
+* stop backlog replay wave on plugin restart/update ([ee37738](https://github.com/namhtpyn/paperclip-plugin-matrix-chat/commit/ee3773801de355581f443604bdc95490a0ebfe7c))
+
 ## [0.3.2](https://github.com/namhtpyn/paperclip-plugin-matrix-chat/compare/v0.3.1...v0.3.2) (2026-10-03)
 
 
