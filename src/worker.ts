@@ -210,7 +210,7 @@ async function startEndpointBridge(ctx: PluginContext, config: BridgeConfig, ep:
   const handleCommand = async (roomId: string, body: string, ev: MatrixEvent): Promise<boolean> => {
     const prefix = config.commandPrefix || "!";
     // Command may be bare ("!status") or targeted at a bot via mention, in
-    // either order: "!status @zed-bot" or "@zed-bot !status".
+    // either order: "!status @my-bot" or "@my-bot !status".
     const me = whoami.user_id;
     const mentionAnywhere = new RegExp(`@${me.split("@")[1].split(":")[0]}(?::|\\b)`);
     const mentionsMe = mentionAnywhere.test(body);
