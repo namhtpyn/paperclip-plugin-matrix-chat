@@ -31,8 +31,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build
-        run: npm run build
+      # Build happens inside semantic-release's prepare step (after the
+      # version bump) via @semantic-release/exec, so the internal manifest
+      # version always matches the published package version.
 
       # npm OIDC trusted publishing: @semantic-release/npm 13.x exchanges this
       # job's OIDC identity for a short-lived publish token — no NPM_TOKEN needed
