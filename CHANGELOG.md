@@ -1,3 +1,10 @@
+## [0.3.1](https://github.com/namhtpyn/paperclip-plugin-matrix-chat/compare/v0.3.0...v0.3.1) (2026-10-03)
+
+
+### Bug Fixes
+
+* **ci:** derive PLUGIN_VERSION from package.json at build time ([e2f27e8](https://github.com/namhtpyn/paperclip-plugin-matrix-chat/commit/e2f27e887b44c2cd0e018acb74c02b59b7f4ceac))
+
 # [0.3.0](https://github.com/namhtpyn/paperclip-plugin-matrix-chat/compare/v0.2.4...v0.3.0) (2026-10-03)
 
 
