@@ -1,3 +1,10 @@
+## [0.2.4](https://github.com/namhtpyn/paperclip-plugin-matrix-chat/compare/v0.2.3...v0.2.4) (2026-10-03)
+
+
+### Bug Fixes
+
+* replace vendored sdk-shim with @paperclipai/plugin-sdk npm dependency; TypeScript 7 ([1b3508b](https://github.com/namhtpyn/paperclip-plugin-matrix-chat/commit/1b3508b7599b98e605a85d900f034fe710a4d4cd))
+
 ## [0.2.3](https://github.com/namhtpyn/paperclip-plugin-matrix-chat/compare/v0.2.2...v0.2.3) (2026-10-03)
 
 
