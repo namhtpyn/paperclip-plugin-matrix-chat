@@ -108,9 +108,21 @@ async function startEndpointBridge(ctx: PluginContext, config: BridgeConfig, ep:
   const stored = await ctx.state
     .get({ scopeKind: "instance", namespace: STATE_NAMESPACE, stateKey })
     .catch(() => null);
+  let storedSince: string | undefined;
   if (stored && typeof stored === "object") {
-    for (const [roomId, val] of Object.entries(stored as Record<string, { sessionId?: string | null }>)) {
-      sessions.set(roomId, { sessionId: val.sessionId ?? null });
+    // v0.3.2+ shape: { rooms: { roomId: { sessionId } }, since: token }
+    // legacy shape: { roomId: { sessionId } } flat map (no since)
+    const s = stored as Record<string, unknown>;
+    if (s.rooms && typeof s.rooms === "object") {
+      for (const [roomId, val] of Object.entries(s.rooms as Record<string, { sessionId?: string | null }>)) {
+        sessions.set(roomId, { sessionId: val.sessionId ?? null });
+      }
+      if (typeof s.since === "string") storedSince = s.since;
+    } else {
+      for (const [roomId, val] of Object.entries(s as Record<string, { sessionId?: string | null }>)) {
+        if (roomId === "since") continue;
+        sessions.set(roomId, { sessionId: val?.sessionId ?? null });
+      }
     }
   }
 
@@ -122,9 +134,13 @@ async function startEndpointBridge(ctx: PluginContext, config: BridgeConfig, ep:
     const dump: Record<string, { sessionId: string | null }> = {};
     for (const [roomId, st] of sessions) dump[roomId] = { sessionId: st.sessionId };
     await ctx.state
-      .set({ scopeKind: "instance", namespace: STATE_NAMESPACE, stateKey }, dump)
+      .set({ scopeKind: "instance", namespace: STATE_NAMESPACE, stateKey }, { rooms: dump, since })
       .catch(() => undefined);
   };
+
+  // Persist the sync cursor alongside sessions so a restart resumes exactly
+  // where it left off instead of replaying the backlog as a wave of replies.
+  since = storedSince;
 
   const ensureSession = async (roomId: string): Promise<string> => {
     const st = sessions.get(roomId);
@@ -293,12 +309,21 @@ async function startEndpointBridge(ctx: PluginContext, config: BridgeConfig, ep:
   };
 
   const loop = async () => {
+    let firstCycle = !since; // no stored sync token -> catch-up mode
     while (!stopped) {
       try {
         // 20s long-poll: the host's http.fetch RPC has a 30s ceiling; a 60s
         // sync timeout would RPC-timeout every cycle.
         const res = await matrix.sync(since, 20_000);
         since = res.next_batch;
+        if (firstCycle) {
+          // First sync after startup with no token: discard the backlog so a
+          // plugin restart/update doesn't replay old messages into a wave of
+          // bot replies. Only messages arriving AFTER startup are bridged.
+          firstCycle = false;
+          logger.info("startup sync: backlog discarded", { agent: agentName });
+          continue;
+        }
         for (const [roomId, data] of Object.entries(res.rooms?.join ?? {})) {
           for (const ev of data.timeline?.events ?? []) {
             try {
