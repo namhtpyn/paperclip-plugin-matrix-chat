@@ -11,7 +11,7 @@
     "worker": "./dist/worker.js"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "node scripts/sync-version.mjs && tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "smoke": "node smoke.mjs",
     "clean": "rm -rf dist",
