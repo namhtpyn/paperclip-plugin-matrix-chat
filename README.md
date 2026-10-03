@@ -57,6 +57,8 @@ Company-scoped config (Settings → Plugins → Matrix Chat Bridge):
     {
       "agentId": "<paperclip agent uuid>",
       "accessToken": "<matrix bot access token>",
+      // OR pick a stored secret in the config UI (recommended):
+      // "accessToken": { "type": "secret_ref", "secretId": "<uuid from Settings → Secrets>" }
       "listenRooms": ["!roomid:matrix.example.com"],  // [] = all joined rooms
       "wakeOn": "mention"          // optional per-endpoint override
     }

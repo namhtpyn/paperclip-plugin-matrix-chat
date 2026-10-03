@@ -1,7 +1,7 @@
 import type { PaperclipPluginManifestV1 } from "@paperclipai/plugin-sdk";
 
 export const PLUGIN_ID = "paperclip.matrix-chat";
-export const PLUGIN_VERSION = "0.4.2";
+export const PLUGIN_VERSION = "0.4.3";
 
 const manifest: PaperclipPluginManifestV1 = {
   id: PLUGIN_ID,
@@ -23,6 +23,7 @@ const manifest: PaperclipPluginManifestV1 = {
     "http.outbound",
     "events.subscribe",
     "activity.log.write",
+    "secrets.read-ref",
   ],
   entrypoints: {
     worker: "./dist/worker.js",
@@ -59,7 +60,12 @@ const manifest: PaperclipPluginManifestV1 = {
           required: ["agentId", "accessToken"],
           properties: {
             agentId: { type: "string", title: "Paperclip agent UUID" },
-            accessToken: { type: "string", title: "Matrix bot access token" },
+            accessToken: {
+              type: "string",
+              format: "secret-ref",
+              title: "Matrix bot access token",
+              description: "Pick a stored secret (recommended) — the token never lands in plugin config. Plain string also accepted for local dev.",
+            },
             listenRooms: { type: "array", items: { type: "string" }, title: "Room allowlist (IDs or aliases)" },
             wakeOn: { type: "string", enum: ["mention", "all"] },
           },

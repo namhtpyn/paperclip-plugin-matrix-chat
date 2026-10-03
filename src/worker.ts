@@ -1,4 +1,4 @@
-import { definePlugin, runWorker, type PluginContext, type PluginConfigChangeContext, type PluginLogger, type PluginConfigValidationResult } from "@paperclipai/plugin-sdk";
+import { definePlugin, runWorker, type PluginContext, type PluginConfigChangeContext, type PluginLogger, type PluginConfigValidationResult, type EnvSecretRefBinding } from "@paperclipai/plugin-sdk";
 import manifest from "./manifest.js";
 import { MatrixClient, mentionsUser, messageBody, stripMention, type MatrixEvent } from "./matrix-client.js";
 
@@ -12,6 +12,8 @@ import { MatrixClient, mentionsUser, messageBody, stripMention, type MatrixEvent
  *   commandPrefix: string,          // global
  *   endpoints: [                    // per-agent bindings (like the Slack connector)
  *     { agentId, accessToken, listenRooms: string[], wakeOn? }
+ * accessToken may be a plain string (dev) or a {type:"secret_ref", secretId}
+ * binding picked from paperclip's stored secrets in the config UI.
  *   ]
  * }
  *
@@ -24,7 +26,8 @@ import { MatrixClient, mentionsUser, messageBody, stripMention, type MatrixEvent
 
 interface EndpointConfig {
   agentId: string;
-  accessToken: string;
+  /** Plain token string OR a secret_ref binding resolved at bridge start. */
+  accessToken: string | EnvSecretRefBinding;
   listenRooms: string[];
   wakeOn?: "mention" | "all";
 }
@@ -56,7 +59,21 @@ function parseConfig(raw: unknown): Omit<BridgeConfig, "companyId"> | null {
       if (!e || typeof e !== "object") continue;
       const o = e as Record<string, unknown>;
       const agentId = typeof o.agentId === "string" ? o.agentId : "";
-      const accessToken = typeof o.accessToken === "string" ? o.accessToken : "";
+      // accessToken: plain string OR {type:"secret_ref", secretId} binding
+      let accessToken: EndpointConfig["accessToken"] = "";
+      const at = o.accessToken;
+      if (typeof at === "string" && at) accessToken = at;
+      else if (at && typeof at === "object") {
+        const a = at as Record<string, unknown>;
+        if (a.type === "secret_ref" && typeof a.secretId === "string" && a.secretId) {
+          const version = a.version;
+          accessToken = {
+            type: "secret_ref",
+            secretId: a.secretId,
+            ...(version !== undefined ? { version: version as number | "latest" } : {}),
+          };
+        }
+      }
       if (!agentId || !accessToken) continue;
       eps.push({
         agentId,
@@ -78,7 +95,18 @@ function parseConfig(raw: unknown): Omit<BridgeConfig, "companyId"> | null {
 async function startEndpointBridge(ctx: PluginContext, config: BridgeConfig, ep: EndpointConfig, agentName: string): Promise<{ stop: () => void; name: string }> {
   const logger = ctx.logger;
   const wakeOn = ep.wakeOn ?? config.wakeOn;
-  const matrix = new MatrixClient(config.homeserverUrl, ep.accessToken, (u, i) => ctx.http.fetch(u.toString(), i));
+  // Resolve a secret_ref binding to the plaintext token at start time.
+  // Resolved values are never cached, logged, or persisted.
+  let token: string;
+  if (typeof ep.accessToken === "string") {
+    token = ep.accessToken;
+  } else {
+    token = await ctx.secrets.resolve(ep.accessToken, {
+      companyId: config.companyId,
+      configPath: `endpoints.${config.endpoints.indexOf(ep)}.accessToken`,
+    });
+  }
+  const matrix = new MatrixClient(config.homeserverUrl, token, (u, i) => ctx.http.fetch(u.toString(), i));
   const whoami = await matrix.whoami();
   logger.info("Endpoint up", { agent: agentName, matrixUser: whoami.user_id });
 
