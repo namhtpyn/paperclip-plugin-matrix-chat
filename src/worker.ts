@@ -27,7 +27,6 @@ interface EndpointConfig {
   accessToken: string;
   listenRooms: string[];
   wakeOn?: "mention" | "all";
-  enabled?: boolean;
 }
 
 interface BridgeConfig {
@@ -35,8 +34,6 @@ interface BridgeConfig {
   homeserverUrl: string;
   commandPrefix: string;
   wakeOn: "mention" | "all";
-  bridgeEnabled?: boolean;
-  statusReplies?: boolean;
   endpoints: EndpointConfig[];
 }
 
@@ -66,7 +63,6 @@ function parseConfig(raw: unknown): Omit<BridgeConfig, "companyId"> | null {
         accessToken,
         listenRooms: Array.isArray(o.listenRooms) ? (o.listenRooms as string[]) : [],
         wakeOn: o.wakeOn === "all" ? "all" : o.wakeOn === "mention" ? "mention" : undefined,
-        enabled: o.enabled === false ? false : true,
       });
     }
   }
@@ -76,19 +72,15 @@ function parseConfig(raw: unknown): Omit<BridgeConfig, "companyId"> | null {
     endpoints: eps,
     wakeOn: cfg.wakeOn === "all" ? "all" : "mention",
     commandPrefix: "!", // locked; any stored value is overridden
-    bridgeEnabled: cfg.bridgeEnabled === false ? false : true,
-    statusReplies: cfg.statusReplies === false ? false : true,
   };
 }
 
 async function startEndpointBridge(ctx: PluginContext, config: BridgeConfig, ep: EndpointConfig, agentName: string): Promise<{ stop: () => void; name: string }> {
   const logger = ctx.logger;
   const wakeOn = ep.wakeOn ?? config.wakeOn;
-  const epEnabled = ep.enabled !== false; // undefined/absent = enabled
-
   const matrix = new MatrixClient(config.homeserverUrl, ep.accessToken, (u, i) => ctx.http.fetch(u.toString(), i));
   const whoami = await matrix.whoami();
-  logger.info("Endpoint up", { agent: agentName, matrixUser: whoami.user_id, bridging: config.bridgeEnabled !== false && epEnabled });
+  logger.info("Endpoint up", { agent: agentName, matrixUser: whoami.user_id });
 
   const joined = new Set<string>();
   for (const room of ep.listenRooms) {
@@ -206,13 +198,7 @@ async function startEndpointBridge(ctx: PluginContext, config: BridgeConfig, ep:
     if (otherBotMention && !mentionsMe) return false; // targeted at a sibling bridge
 
     if (cmd === "status") {
-      // statusReplies OFF: stay silent on !status entirely (quiet mode)
-      if (config.statusReplies === false) return true;
-      const sw = [];
-      if (config.bridgeEnabled === false) sw.push("MASTER OFF");
-      if (epEnabled === false) sw.push("endpoint OFF");
-      const suffix = sw.length ? ` ⏸ ${sw.join(" + ")}` : "";
-      await reply(roomId, `bridge v${manifest.version} [${me}]: agent ${agentName}, wake=${wakeOn}, rooms=${joined.size}${suffix}`);
+      await reply(roomId, `bridge v${manifest.version} [${me}]: agent ${agentName}, wake=${wakeOn}, rooms=${joined.size}`);
       return true;
     }
     if (cmd === "new-session" || cmd === "new") {
@@ -247,10 +233,6 @@ async function startEndpointBridge(ctx: PluginContext, config: BridgeConfig, ep:
     const body = messageBody(ev);
     if (body === null) return;
     if (await handleCommand(roomId, body, ev)) return;
-
-    // Master + per-endpoint switches: OFF means ignore everything except commands.
-    if (config.bridgeEnabled === false) return;
-    if (epEnabled === false) return;
 
     const mentioned = mentionsUser(ev, whoami.user_id, body);
     if (wakeOn === "mention" && !mentioned) return;
