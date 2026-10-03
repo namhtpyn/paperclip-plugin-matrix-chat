@@ -55,6 +55,22 @@ jobs:
             echo "package exists on npm; OIDC trusted publishing will be used (no token required)"
           fi
 
+      - name: Get OIDC token URL
+        id: idtokenurl
+        env:
+          ACTIONS_ID_TOKEN_REQUEST_URL: ${{ env.ACTIONS_ID_TOKEN_REQUEST_URL }}
+        run: echo "url=${ACTIONS_ID_TOKEN_REQUEST_URL}" >> "$GITHUB_OUTPUT"
+
+      - name: Debug OIDC identity (claims npm will match against)
+        run: |
+          IDT=$(curl -s -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "${{ steps.idtokenurl.outputs.url }}&audience=npmjs.com" | jq -r .value)
+          for f in sub repository_owner repository repo workflow ref environment; do
+            echo "claim $f = $(echo "$IDT" | jq -r ".payload.$f // .payload.claims.$f // \"(absent)\"")"
+          done
+        env:
+          ACTIONS_ID_TOKEN_REQUEST_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Release (semantic-release)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
