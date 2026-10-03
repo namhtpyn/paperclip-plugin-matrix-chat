@@ -36,6 +36,7 @@ interface BridgeConfig {
   commandPrefix: string;
   wakeOn: "mention" | "all";
   bridgeEnabled?: boolean;
+  statusReplies?: boolean;
   endpoints: EndpointConfig[];
 }
 
@@ -76,6 +77,7 @@ function parseConfig(raw: unknown): Omit<BridgeConfig, "companyId"> | null {
     wakeOn: cfg.wakeOn === "all" ? "all" : "mention",
     commandPrefix: "!", // locked; any stored value is overridden
     bridgeEnabled: cfg.bridgeEnabled === false ? false : true,
+    statusReplies: cfg.statusReplies === false ? false : true,
   };
 }
 
@@ -204,6 +206,8 @@ async function startEndpointBridge(ctx: PluginContext, config: BridgeConfig, ep:
     if (otherBotMention && !mentionsMe) return false; // targeted at a sibling bridge
 
     if (cmd === "status") {
+      // statusReplies OFF: stay silent on !status entirely (quiet mode)
+      if (config.statusReplies === false) return true;
       const sw = [];
       if (config.bridgeEnabled === false) sw.push("MASTER OFF");
       if (epEnabled === false) sw.push("endpoint OFF");

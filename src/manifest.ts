@@ -1,7 +1,7 @@
 import type { PaperclipPluginManifestV1 } from "@paperclipai/plugin-sdk";
 
 export const PLUGIN_ID = "paperclip.matrix-chat";
-export const PLUGIN_VERSION = "0.3.1";
+export const PLUGIN_VERSION = "0.3.3";
 
 const manifest: PaperclipPluginManifestV1 = {
   id: PLUGIN_ID,
@@ -54,6 +54,12 @@ const manifest: PaperclipPluginManifestV1 = {
         type: "boolean",
         title: "Message bridge master switch",
         description: "OFF: no messages are bridged to agents and no bot replies are sent (bot stays connected, all inbound is ignored). Commands (!status/!new) still work. Per-endpoint toggles below can disable individual bridges.",
+        default: true,
+      },
+      statusReplies: {
+        type: "boolean",
+        title: "Answer !status in rooms",
+        description: "OFF: bridges stay silent on the !status command (no \"bridge v… : agent X, wake=…, rooms=N\" line). Use the plugin's Settings → Logs or the board UI to check bridge state instead. !new still works.",
         default: true,
       },
       endpoints: {
