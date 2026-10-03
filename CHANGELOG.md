@@ -1,3 +1,10 @@
+## [0.3.2](https://github.com/namhtpyn/paperclip-plugin-matrix-chat/compare/v0.3.1...v0.3.2) (2026-10-03)
+
+
+### Bug Fixes
+
+* parseConfig was dropping enabled/bridgeEnabled toggles ([1af80c9](https://github.com/namhtpyn/paperclip-plugin-matrix-chat/commit/1af80c915684012c45206bedc09d61dc92c29372))
+
 ## [0.3.1](https://github.com/namhtpyn/paperclip-plugin-matrix-chat/compare/v0.3.0...v0.3.1) (2026-10-03)
 
 

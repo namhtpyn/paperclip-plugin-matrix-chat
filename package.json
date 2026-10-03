@@ -1,6 +1,6 @@
 {
   "name": "paperclip-plugin-matrix-chat",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Matrix chat bridge plugin for Paperclip: bridges Matrix rooms/DMs to Paperclip agents (one endpoint per agent, Slack-connector style).",
   "type": "module",
   "exports": {
