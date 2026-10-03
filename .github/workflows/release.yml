@@ -63,11 +63,17 @@ jobs:
 
       - name: Debug OIDC identity (claims npm will match against)
         run: |
-          IDT=$(curl -s -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
-            "${{ steps.idtokenurl.outputs.url }}&audience=npmjs.com" | jq -r .value)
-          for f in sub repository_owner repository repo workflow ref environment; do
-            echo "claim $f = $(echo "$IDT" | jq -r ".payload.$f // .payload.claims.$f // \"(absent)\"")"
-          done
+          set -x
+          RESP=$(curl -s -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "${{ steps.idtokenurl.outputs.url }}&audience=npmjs.com")
+          echo "RAW RESPONSE: $RESP" | head -c 600
+          IDT=$(echo "$RESP" | jq -r .value)
+          echo "IDT length: ${#IDT}"
+          if [ -n "$IDT" ] && [ "$IDT" != "null" ]; then
+            P1=$(echo "$IDT" | cut -d. -f2)
+            P1="$P1$(printf '%*s' $(( (4 - ${#P1} % 4) % 4 )) '' | tr ' _-' '/ ~+')"
+            echo "$P1" | base64 -d 2>/dev/null | jq '{sub, repository_owner, repository, workflow, ref, environment, actor}' || echo "$P1" | base64 -d 2>/dev/null | head -c 800
+          fi
         env:
           ACTIONS_ID_TOKEN_REQUEST_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
