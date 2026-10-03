@@ -1,3 +1,10 @@
+# [0.3.0](https://github.com/namhtpyn/paperclip-plugin-matrix-chat/compare/v0.2.4...v0.3.0) (2026-10-03)
+
+
+### Features
+
+* message bridge on/off switches ([2162544](https://github.com/namhtpyn/paperclip-plugin-matrix-chat/commit/2162544345beadf3856e57c02b3792d56523cb5e))
+
 ## [0.2.4](https://github.com/namhtpyn/paperclip-plugin-matrix-chat/compare/v0.2.3...v0.2.4) (2026-10-03)
 
 
