@@ -1,3 +1,10 @@
+## [0.5.1](https://github.com/namhtpyn/paperclip-plugin-matrix-chat/compare/v0.5.0...v0.5.1) (2026-10-03)
+
+
+### Bug Fixes
+
+* secret-ref schema must accept string|object (match official plugin pattern) ([2937f83](https://github.com/namhtpyn/paperclip-plugin-matrix-chat/commit/2937f83fea72df302a68c2b98b70a984dc7c5ea1))
+
 # [0.5.0](https://github.com/namhtpyn/paperclip-plugin-matrix-chat/compare/v0.4.3...v0.5.0) (2026-10-03)
 
 
