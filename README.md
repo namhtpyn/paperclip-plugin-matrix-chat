@@ -1,4 +1,5 @@
 # Paperclip Matrix Chat Bridge Plugin
+<!-- test -->
 
 A [Paperclip](https://github.com/paperclipai/paperclip) plugin that bridges Matrix rooms and DMs to Paperclip agents — one endpoint per agent, Slack-connector style. Each endpoint binds a Matrix bot account to a Paperclip agent and a room allowlist. Inbound messages become agent-session prompts; the agent's final reply is posted back to the room.
 
@@ -17,6 +18,7 @@ Runs a zero-dependency Matrix client (raw Client-Server API `/sync` long-poll) i
 - **Session persistence** across worker restarts via plugin state
 
 ## Requirements
+
 
 - Paperclip with plugin support (plugin SDK 1.0.0), reachable Matrix homeserver
 - One Matrix account per agent (create via your homeserver's admin API; e.g. Synapse shared-secret registration)
