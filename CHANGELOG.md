@@ -1,3 +1,15 @@
+# [0.5.0](https://github.com/namhtpyn/paperclip-plugin-matrix-chat/compare/v0.4.3...v0.5.0) (2026-10-03)
+
+
+### Bug Fixes
+
+* anonymize bot handle in command-targeting comment ([d630cbe](https://github.com/namhtpyn/paperclip-plugin-matrix-chat/commit/d630cbec27f32576c3f507cada6c3b1e4224846b))
+
+
+### Features
+
+* support stored secrets (secret-ref) for endpoint access tokens ([f5ea3a2](https://github.com/namhtpyn/paperclip-plugin-matrix-chat/commit/f5ea3a24da4329659501224bae1df1d593a5d8ab))
+
 ## [0.4.3](https://github.com/namhtpyn/paperclip-plugin-matrix-chat/compare/v0.4.2...v0.4.3) (2026-10-03)
 
 
