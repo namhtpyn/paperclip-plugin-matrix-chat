@@ -1,3 +1,10 @@
+## [0.4.3](https://github.com/namhtpyn/paperclip-plugin-matrix-chat/compare/v0.4.2...v0.4.3) (2026-10-03)
+
+
+### Bug Fixes
+
+* drop bridge-invented run timeouts; wait the host's full delivery window ([5b9c185](https://github.com/namhtpyn/paperclip-plugin-matrix-chat/commit/5b9c1853133236f581c8cd5f0889ad0be305586b))
+
 ## [0.4.2](https://github.com/namhtpyn/paperclip-plugin-matrix-chat/compare/v0.4.1...v0.4.2) (2026-10-03)
 
 
