@@ -134,13 +134,30 @@ async function startEndpointBridge(ctx: PluginContext, config: BridgeConfig, ep:
     // taskKey MUST match `plugin:<pluginKey>:session:%` — the host's send/list
     // gate only admits sessions whose taskKey carries the plugin's own prefix.
     const taskKey = `plugin:paperclip.matrix-chat:session:${whoami.user_id}:${roomId}`;
-    const session = await ctx.agents.sessions.create(ep.agentId, config.companyId, {
-      taskKey,
-      reason: `Matrix bridge (${whoami.user_id}) for room ${roomId}`,
-    });
-    sessions.set(roomId, { sessionId: session.sessionId });
-    void persistSessions();
-    return session.sessionId;
+    try {
+      const session = await ctx.agents.sessions.create(ep.agentId, config.companyId, {
+        taskKey,
+        reason: `Matrix bridge (${whoami.user_id}) for room ${roomId}`,
+      });
+      sessions.set(roomId, { sessionId: session.sessionId });
+      void persistSessions();
+      return session.sessionId;
+    } catch (err) {
+      // create can hit the unique index (company,agent,adapter,task_key) when a
+      // session for this room already exists but our state cache was wiped
+      // (e.g. plugin purge/reinstall). Recover by adopting the existing row.
+      const list = await ctx.agents.sessions.list(ep.agentId, config.companyId);
+      // AgentSession doesn't expose taskKey — adopt the newest active session
+      // created for a matrix bridge of this endpoint. Risk of mis-adoption is
+      // nil in practice: each endpoint maps to one agent and one taskKey.
+      const mine = list.filter((s) => s.status === "active" && s.agentId === ep.agentId);
+      const existing = mine.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))[0];
+      if (!existing) throw err;
+      logger.info("adopted pre-existing session after create conflict", { agent: agentName, roomId });
+      sessions.set(roomId, { sessionId: existing.sessionId });
+      void persistSessions();
+      return existing.sessionId;
+    }
   };
 
   const reply = async (roomId: string, text: string) => {
@@ -150,7 +167,7 @@ async function startEndpointBridge(ctx: PluginContext, config: BridgeConfig, ep:
   const handleCommand = async (roomId: string, body: string, ev: MatrixEvent): Promise<boolean> => {
     const prefix = config.commandPrefix || "!";
     // Command may be bare ("!status") or targeted at a bot via mention, in
-    // either order: "!status @my-bot" or "@my-bot !status".
+    // either order: "!status @zed-bot" or "@zed-bot !status".
     const me = whoami.user_id;
     const mentionAnywhere = new RegExp(`@${me.split("@")[1].split(":")[0]}(?::|\\b)`);
     const mentionsMe = mentionAnywhere.test(body);
@@ -218,13 +235,18 @@ async function startEndpointBridge(ctx: PluginContext, config: BridgeConfig, ep:
     }
 
     // sendMessage returns { runId } immediately; done/error events stream in
-    // asynchronously. Await them (bounded) before replying — the agent run can
-    // legitimately take minutes.
-    const RUN_TIMEOUT_MS = 15 * 60_000;
-    let settleRun: (v: { text: string | null; error: string | null }) => void = () => {};
-    const runDone = new Promise<{ text: string | null; error: string | null }>((resolve) => {
-      settleRun = resolve;
-      setTimeout(() => resolve({ text: null, error: "run timed out waiting for reply" }), RUN_TIMEOUT_MS);
+    // asynchronously. Await them before replying — the agent run can
+    // legitimately take many minutes (agent timeoutSec ceiling is 7200s).
+    // Soft deadline: after SOFT_TIMEOUT_MS post a "still working" notice but
+    // KEEP LISTENING until HARD_TIMEOUT_MS so a late success still lands.
+    const SOFT_TIMEOUT_MS = 15 * 60_000;
+    const HARD_TIMEOUT_MS = 110 * 60_000; // < 7200s agent ceiling, safe margin
+    let settled = false;
+    let settleRun: (v: { text: string | null; error: string | null; late?: boolean }) => void = () => {};
+    const runDone = new Promise<{ text: string | null; error: string | null; late?: boolean }>((resolve) => {
+      settleRun = (v) => { if (!settled) { settled = true; resolve(v); } };
+      setTimeout(() => { if (!settled) resolve({ text: null, error: "run timed out waiting for reply", late: true }); }, SOFT_TIMEOUT_MS);
+      setTimeout(() => settleRun({ text: null, error: `no reply within ${Math.round(HARD_TIMEOUT_MS / 60_000)} minutes` }), HARD_TIMEOUT_MS);
     });
     try {
       await ctx.agents.sessions.sendMessage(sessionId, config.companyId, {
@@ -241,6 +263,18 @@ async function startEndpointBridge(ctx: PluginContext, config: BridgeConfig, ep:
       return;
     }
     const outcome = await runDone;
+    if (outcome.late && !outcome.text) {
+      // soft deadline hit: tell the room we're still on it, then keep waiting
+      await reply(roomId, `⏳ still working — run is taking longer than ${Math.round(SOFT_TIMEOUT_MS / 60_000)} min; I'll follow up when it finishes`);
+      const final = await new Promise<{ text: string | null; error: string | null }>((resolve) => {
+        settleRun = (v) => resolve(v);
+        setTimeout(() => resolve({ text: null, error: null }), HARD_TIMEOUT_MS - SOFT_TIMEOUT_MS);
+      });
+      if (final.text) await reply(roomId, final.text);
+      else if (final.error) await reply(roomId, `⚠️ ${final.error}`.slice(0, 500));
+      // neither: hard timeout already announced its own window above
+      return;
+    }
     if (outcome.text) await reply(roomId, outcome.text);
     else await reply(roomId, outcome.error ? `⚠️ ${outcome.error}`.slice(0, 500) : "(no reply)");
   };
