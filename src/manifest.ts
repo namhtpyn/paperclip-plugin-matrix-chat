@@ -1,7 +1,7 @@
 import type { PaperclipPluginManifestV1 } from "@paperclipai/plugin-sdk";
 
 export const PLUGIN_ID = "paperclip.matrix-chat";
-export const PLUGIN_VERSION = "0.2.1";
+export const PLUGIN_VERSION = "0.2.3";
 
 const manifest: PaperclipPluginManifestV1 = {
   id: PLUGIN_ID,
