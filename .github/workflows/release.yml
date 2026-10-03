@@ -72,7 +72,7 @@ jobs:
           if [ -n "$IDT" ] && [ "$IDT" != "null" ]; then
             P1=$(echo "$IDT" | cut -d. -f2)
             P1="$P1$(printf '%*s' $(( (4 - ${#P1} % 4) % 4 )) '' | tr ' _-' '/ ~+')"
-            echo "$P1" | base64 -d 2>/dev/null | jq '{sub, repository_owner, repository, workflow, ref, environment, actor}' || echo "$P1" | base64 -d 2>/dev/null | head -c 800
+            echo "$P1" | base64 -d 2>/dev/null | jq '{sub, job_workflow_ref, repository_owner, repository, workflow, ref, environment, actor, iss}' || echo "$P1" | base64 -d 2>/dev/null | head -c 800
           fi
         env:
           ACTIONS_ID_TOKEN_REQUEST_TOKEN: ${{ secrets.GITHUB_TOKEN }}
