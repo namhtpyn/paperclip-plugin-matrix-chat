@@ -1,6 +1,6 @@
 {
   "name": "paperclip-plugin-matrix-chat",
-  "version": "0.2.1",
+  "version": "0.0.0-development",
   "description": "Matrix chat bridge plugin for Paperclip: bridges Matrix rooms/DMs to Paperclip agents (one endpoint per agent, Slack-connector style).",
   "type": "module",
   "exports": {
@@ -13,12 +13,20 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
+    "smoke": "node smoke.mjs",
     "clean": "rm -rf dist",
-    "smoke": "node smoke.mjs"
+    "semantic-release": "semantic-release"
   },
   "devDependencies": {
     "@paperclipai/plugin-sdk": "file:./sdk-shim",
+    "@semantic-release/changelog": "^7.0.0",
+    "@semantic-release/commit-analyzer": "^13.0.1",
+    "@semantic-release/git": "^11.0.1",
+    "@semantic-release/github": "^12.0.10",
+    "@semantic-release/npm": "^13.2.0",
+    "@semantic-release/release-notes-generator": "^14.1.1",
     "@types/node": "^22.20.5",
+    "semantic-release": "^24.2.0",
     "typescript": "^5.7.3"
   },
   "engines": {
@@ -31,5 +39,15 @@
     "type": "git",
     "url": "https://github.com/namhtpyn/paperclip-plugin-matrix-chat"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "files": [
+    "dist",
+    "sdk-shim/dist",
+    "LICENSE",
+    "README.md"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "main": "./dist/worker.js"
 }
