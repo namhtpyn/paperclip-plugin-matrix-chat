@@ -34,6 +34,28 @@ async function main() {
   if (t4 !== "what is up") throw new Error("stripMention failed: '" + t4 + "'");
   console.log("matrix-client unit tests OK (body/mention/strip)");
 
+  // 3b. markdown -> Matrix HTML
+  const md = await import("./dist/markdown.js");
+  const cases = [
+    ["**bold** and *italic*", "<p><strong>bold</strong> and <em>italic</em></p>"],
+    ["- one\n- two", "<ul><li>one</li><li>two</li></ul>"],
+    ["1. a\n2. b", "<ol><li>a</li><li>b</li></ol>"],
+    ["# Heading", "<h1>Heading</h1>"],
+    ["`a*b*c` and <script>", "<p><code>a*b*c</code> and &lt;script&gt;</p>"],
+    ["```sh\nls -la <x>\n```", '<pre><code class="language-sh">ls -la &lt;x&gt;</code></pre>'],
+    ["[site](https://example.com) [x](javascript:alert(1))", '<p><a href="https://example.com">site</a> [x](javascript:alert(1))</p>'],
+    ["> quote", "<blockquote><p>quote</p></blockquote>"],
+    ["line 1\nline 2", "<p>line 1<br>line 2</p>"],
+    ["snake_case_name and 2*3*4", "<p>snake_case_name and 2*3*4</p>"],
+  ];
+  for (const [input, want] of cases) {
+    const got = md.markdownToHtml(input);
+    if (got !== want) throw new Error(`markdownToHtml(${JSON.stringify(input)}) = ${got}, want ${want}`);
+  }
+  if (md.hasMarkdown("just a plain sentence.")) throw new Error("hasMarkdown false positive");
+  if (!md.hasMarkdown("this is **bold**")) throw new Error("hasMarkdown missed bold");
+  console.log("markdown unit tests OK (" + cases.length + " cases)");
+
   // 4. Live homeserver reachability via the client class with a dummy token (expect 401 not network error)
   const client = new mc.MatrixClient("https://matrix.example.com", "dummy", fetch);
   try {
