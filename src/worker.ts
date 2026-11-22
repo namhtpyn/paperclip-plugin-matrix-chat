@@ -1,6 +1,7 @@
 import { definePlugin, runWorker, type PluginContext, type PluginConfigChangeContext, type PluginLogger, type PluginConfigValidationResult, type EnvSecretRefBinding } from "@paperclipai/plugin-sdk";
 import manifest from "./manifest.js";
 import { MatrixClient, mentionsUser, messageBody, stripMention, type MatrixEvent } from "./matrix-client.js";
+import { hasMarkdown, markdownToHtml } from "./markdown.js";
 
 /**
  * Matrix Chat Bridge worker — multi-endpoint, proactive-plugin pattern.
@@ -204,7 +205,36 @@ async function startEndpointBridge(ctx: PluginContext, config: BridgeConfig, ep:
   };
 
   const reply = async (roomId: string, text: string) => {
-    await matrix.sendMessage(roomId, text.slice(0, 3500));
+    const body = text.slice(0, 3500);
+    // Agents answer in Markdown; send it as formatted HTML so clients render
+    // bold/italic/lists instead of showing the raw asterisks. The plain body
+    // stays as the fallback for clients without HTML support.
+    let html: string | undefined;
+    if (hasMarkdown(body)) {
+      try {
+        html = markdownToHtml(body);
+      } catch (err) {
+        logger.warn("markdown render failed; sending plain text", { agent: agentName, error: String(err) });
+      }
+    }
+    await matrix.sendMessage(roomId, body, html);
+  };
+
+  const allowedRoom = (roomId: string) => ep.listenRooms.length === 0 || ep.listenRooms.includes(roomId);
+
+  const acceptInvite = async (roomId: string) => {
+    if (joined.has(roomId)) return;
+    if (!allowedRoom(roomId)) {
+      logger.info("invite ignored: room not in listenRooms", { agent: agentName, roomId });
+      return;
+    }
+    try {
+      await matrix.joinRoom(roomId);
+      joined.add(roomId);
+      logger.info("auto-joined on invite", { agent: agentName, roomId });
+    } catch (err) {
+      logger.warn("invite join failed", { agent: agentName, roomId, error: String(err) });
+    }
   };
 
   const handleCommand = async (roomId: string, body: string, ev: MatrixEvent): Promise<boolean> => {
@@ -246,15 +276,7 @@ async function startEndpointBridge(ctx: PluginContext, config: BridgeConfig, ep:
     if (ev.sender === whoami.user_id) return;
 
     if (ev.type === "m.room.member" && (ev.content as { membership?: string }).membership === "invite") {
-      if (ev.state_key === whoami.user_id) {
-        try {
-          await matrix.joinRoom(roomId);
-          joined.add(roomId);
-          logger.info("auto-joined on invite", { agent: agentName, roomId });
-        } catch (err) {
-          logger.warn("invite join failed", { agent: agentName, roomId, error: String(err) });
-        }
-      }
+      if (ev.state_key === whoami.user_id) await acceptInvite(roomId);
       return;
     }
 
@@ -324,6 +346,11 @@ async function startEndpointBridge(ctx: PluginContext, config: BridgeConfig, ep:
         // sync timeout would RPC-timeout every cycle.
         const res = await matrix.sync(since, 20_000);
         since = res.next_batch;
+        // Pending invites arrive under rooms.invite (never in rooms.join), also
+        // on the first sync, so handle them before the backlog is discarded.
+        for (const roomId of Object.keys(res.rooms?.invite ?? {})) {
+          await acceptInvite(roomId);
+        }
         if (firstCycle) {
           // First sync after startup with no token: discard the backlog so a
           // plugin restart/update doesn't replay old messages into a wave of
